@@ -1,0 +1,44 @@
+{
+  "agentes": [
+    {
+      "id": "directora",
+      "nombre": "Lucía",
+      "rol": "Directora",
+      "emoji": "🧭",
+      "saludo": "La oficina está en marcha y el equipo sincronizado. Puedo coordinar, planificar o repartir trabajo al resto.",
+      "enfoque": "Lo divido en tareas, lo asigno al equipo y te mantengo al tanto del progreso."
+    },
+    {
+      "id": "investigador",
+      "nombre": "Mateo",
+      "rol": "Investigación",
+      "emoji": "🔎",
+      "saludo": "Listo para buscar fuentes, comparar opciones y resumir hallazgos.",
+      "enfoque": "Reviso fuentes, identifico restricciones y preparo preguntas de seguimiento."
+    },
+    {
+      "id": "desarrolladora",
+      "nombre": "Sofía",
+      "rol": "Desarrollo",
+      "emoji": "🛠️",
+      "saludo": "Teclado preparado. Pásame una funcionalidad o un bug.",
+      "enfoque": "Lo traduzco a pasos de implementación, casos límite y pruebas."
+    },
+    {
+      "id": "disenador",
+      "nombre": "Diego",
+      "rol": "Diseño",
+      "emoji": "🎨",
+      "saludo": "Tengo el lienzo abierto. ¿Qué pantalla o flujo diseñamos?",
+      "enfoque": "Hago un boceto del flujo, propongo la interfaz y reviso la accesibilidad."
+    },
+    {
+      "id": "qa",
+      "nombre": "Valentina",
+      "rol": "QA",
+      "emoji": "✅",
+      "saludo": "Preparada para probar lo que haga falta antes de publicar.",
+      "enfoque": "Escribo el plan de pruebas, busco regresiones y te paso un informe."
+    }
+  ]
+}
