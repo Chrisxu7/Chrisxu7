@@ -6,18 +6,21 @@
 #   4. Compila Hermes3D (solo la primera vez) y arranca Studio en
 #      http://localhost:3000 apuntando a ese gateway
 #
-# Uso: ./scripts/oficina-demo.sh [--dev] [--rebuild]
-#   --dev      modo desarrollo de Next.js (recarga en caliente, más lento)
-#   --rebuild  fuerza recompilar Hermes3D
+# Uso: ./scripts/oficina-demo.sh [--dev] [--rebuild] [--preparar]
+#   --dev       modo desarrollo de Next.js (recarga en caliente, más lento)
+#   --rebuild   fuerza recompilar Hermes3D
+#   --preparar  solo descarga, instala y compila; no arranca nada
 set -euo pipefail
 
 MODE="prod"
 REBUILD=0
+PREPARE_ONLY=0
 for arg in "$@"; do
   case "$arg" in
     --dev) MODE="dev" ;;
     --rebuild) REBUILD=1 ;;
-    -h|--help) sed -n 2,13p "$0"; exit 0 ;;
+    --preparar) PREPARE_ONLY=1 ;;
+    -h|--help) sed -n 2,14p "$0"; exit 0 ;;
     *) echo "Opción desconocida: $arg" >&2; exit 1 ;;
   esac
 done
@@ -58,6 +61,25 @@ if [ ! -f "$HERMES3D_DIR/.oficina-deps-ok" ]; then
   touch "$HERMES3D_DIR/.oficina-deps-ok"
 fi
 
+GATEWAY_URL="ws://localhost:$GATEWAY_PORT"
+export NEXT_TELEMETRY_DISABLED=1
+if [ "$MODE" = "prod" ]; then
+  if [ "$REBUILD" = 1 ] || [ ! -f "$HERMES3D_DIR/.oficina-build-ok" ]; then
+    log "Compilando Hermes3D (solo la primera vez, unos minutos) ..."
+    (cd "$HERMES3D_DIR" && NEXT_PUBLIC_GATEWAY_URL="$GATEWAY_URL" npm run build)
+    touch "$HERMES3D_DIR/.oficina-build-ok"
+  fi
+  STUDIO_ARGS=()
+  export NODE_ENV=production
+else
+  STUDIO_ARGS=(--dev)
+fi
+
+if [ "$PREPARE_ONLY" = 1 ]; then
+  log "Hermes3D preparado. Arranca la oficina con ./scripts/oficina-demo.sh"
+  exit 0
+fi
+
 # El gateway usa el paquete "ws" que ya instala Hermes3D.
 export NODE_PATH="$HERMES3D_DIR/node_modules${NODE_PATH:+:$NODE_PATH}"
 export DEMO_ADAPTER_PORT="$GATEWAY_PORT"
@@ -76,29 +98,23 @@ node "$ROOT/gateway/oficina-demo-gateway.js" &
 PIDS+=($!)
 
 # Studio se conecta automáticamente a este gateway en modo "demo".
-export HERMES3D_GATEWAY_URL="ws://localhost:$GATEWAY_PORT"
+export HERMES3D_GATEWAY_URL="$GATEWAY_URL"
 export HERMES3D_GATEWAY_ADAPTER_TYPE="demo"
 export HERMES3D_GATEWAY_TOKEN="${HERMES3D_GATEWAY_TOKEN:-demo}"
 export PORT="$STUDIO_PORT"
 export HOST="${HOST:-127.0.0.1}"
-export NEXT_TELEMETRY_DISABLED=1
 # En producción Studio solo se conecta a gateways de hosts permitidos.
 export UPSTREAM_ALLOWLIST="${UPSTREAM_ALLOWLIST:-localhost,127.0.0.1}"
 
-if [ "$MODE" = "prod" ]; then
-  if [ "$REBUILD" = 1 ] || [ ! -f "$HERMES3D_DIR/.oficina-build-ok" ]; then
-    log "Compilando Hermes3D (solo la primera vez, unos minutos) ..."
-    (cd "$HERMES3D_DIR" && NEXT_PUBLIC_GATEWAY_URL="$HERMES3D_GATEWAY_URL" npm run build)
-    touch "$HERMES3D_DIR/.oficina-build-ok"
-  fi
-  STUDIO_ARGS=()
-  export NODE_ENV=production
-else
-  STUDIO_ARGS=(--dev)
-fi
-
 log "Arrancando Hermes3D Studio ($MODE) en http://localhost:$STUDIO_PORT ..."
-log "Abre http://localhost:$STUDIO_PORT/office  ·  Ctrl+C para salir."
+if [ -n "${CODESPACE_NAME:-}" ]; then
+  DOMAIN="${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
+  URL="https://${CODESPACE_NAME}-${STUDIO_PORT}.${DOMAIN}/office"
+  echo "$URL" > "$ROOT/.oficina-url"
+  log "Abre $URL  ·  Ctrl+C para salir."
+else
+  log "Abre http://localhost:$STUDIO_PORT/office  ·  Ctrl+C para salir."
+fi
 (cd "$HERMES3D_DIR" && node server/index.js "${STUDIO_ARGS[@]}") &
 PIDS+=($!)
 
